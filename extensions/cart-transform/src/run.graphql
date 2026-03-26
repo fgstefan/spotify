@@ -1,0 +1,27 @@
+query RunInput {
+  cart {
+    lines {
+      id
+      quantity
+      merchandise {
+        ... on ProductVariant {
+          id
+          product {
+            id
+          }
+        }
+      }
+      cost {
+        amountPerQuantity {
+          amount
+          currencyCode
+        }
+      }
+    }
+  }
+  cartTransform {
+    metafield(namespace: "reserve-deposit", key: "config") {
+      value
+    }
+  }
+}

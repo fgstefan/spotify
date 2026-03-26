@@ -1,0 +1,17 @@
+api_version = "2025-01"
+
+[[extensions]]
+name = "Reserve Deposit Cart Transform"
+handle = "reserve-deposit-cart-transform"
+type = "function"
+
+  [extensions.build]
+  command = ""
+  path = "src/run.ts"
+
+  [extensions.targeting]
+    target = "purchase.cart-transform.run"
+    input_query = "src/run.graphql"
+
+  [extensions.ui]
+    enable_create = false
