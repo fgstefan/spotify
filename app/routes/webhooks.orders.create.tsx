@@ -15,12 +15,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     where: { shop },
   });
 
-  const reservedProductIds = new Set(reservations.map((r) => r.productId));
+  const reservationMap = new Map(
+    reservations.map((r) => [r.productId, r]),
+  );
 
   for (const lineItem of order.line_items || []) {
     const productGid = `gid://shopify/Product/${lineItem.product_id}`;
+    const reservation = reservationMap.get(productGid);
 
-    if (!reservedProductIds.has(productGid)) continue;
+    if (!reservation) continue;
 
     // Query the inventory item for this variant to adjust inventory
     const inventoryResponse = await admin.graphql(
@@ -60,6 +63,24 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       inventoryItem?.inventoryLevels?.edges?.[0]?.node;
 
     if (!inventoryLevel) continue;
+
+    // Track deposit order for expiry cron job
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + reservation.expiryDays);
+
+    await prisma.depositOrder.create({
+      data: {
+        shop,
+        orderId: `gid://shopify/Order/${order.id}`,
+        orderName: order.name,
+        productId: productGid,
+        variantId: `gid://shopify/ProductVariant/${lineItem.variant_id}`,
+        customerEmail: order.email || null,
+        depositAmount: parseFloat(lineItem.price),
+        fullPrice: parseFloat(lineItem.price),
+        expiresAt,
+      },
+    });
 
     // Reserve the inventory by adjusting the available quantity down
     await admin.graphql(
