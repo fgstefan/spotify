@@ -1,0 +1,223 @@
+{% comment %}
+  Reserve Button Block
+  Replaces the native "Add to Cart" button with a "Reserve with Deposit" button.
+  Works with Dawn, Sense, and other standard Shopify themes.
+{% endcomment %}
+
+{% style %}
+  .reserve-button-wrapper {
+    width: 100%;
+    margin: 1rem 0;
+  }
+
+  .reserve-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 48px;
+    padding: 0.875rem 1.5rem;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.04em;
+    text-transform: none;
+    color: {{ block.settings.text_color }};
+    background-color: {{ block.settings.button_color }};
+    border: none;
+    border-radius: {{ block.settings.border_radius }}px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .reserve-button:hover {
+    opacity: 0.88;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  }
+
+  .reserve-button:active {
+    transform: scale(0.98);
+  }
+
+  .reserve-button:focus-visible {
+    outline: 2px solid {{ block.settings.button_color }};
+    outline-offset: 2px;
+  }
+
+  .reserve-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .reserve-button__icon {
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+
+  .reserve-button__icon svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+  }
+
+  .reserve-button__deposit-info {
+    display: block;
+    width: 100%;
+    margin-top: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--color-foreground, #333);
+    text-align: center;
+    opacity: 0.75;
+  }
+
+  /* Mobile-responsive: larger touch target on small screens */
+  @media screen and (max-width: 749px) {
+    .reserve-button {
+      min-height: 56px;
+      padding: 1rem 1.5rem;
+      font-size: 1.0625rem;
+    }
+  }
+
+  /* Hide native Add to Cart button when this block is active */
+  .product-form__submit,
+  button[name="add"],
+  .shopify-payment-button,
+  .product-form__buttons,
+  [data-shopify="payment-button"] {
+    display: none !important;
+  }
+{% endstyle %}
+
+<div class="reserve-button-wrapper" data-reserve-button>
+  <button
+    type="button"
+    class="reserve-button"
+    data-product-id="{{ product.id }}"
+    data-variant-id="{{ product.selected_or_first_available_variant.id }}"
+    {% unless product.available %}disabled{% endunless %}
+  >
+    <span class="reserve-button__icon">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M17 1c-1.1 0-2 .9-2 2v1H9V3c0-1.1-.9-2-2-2S5 1.9 5 3v1H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-2V3c0-1.1-.9-2-2-2zM7 3v2H5V3h2zm12 0v2h-2V3h2zm2 17H3V10h18v10zm-9-7h2v2h2v2h-2v2h-2v-2H10v-2h2v-2z"/>
+      </svg>
+    </span>
+    <span class="reserve-button__label">
+      {{ block.settings.button_text }}
+    </span>
+  </button>
+
+  {% if block.settings.show_deposit_info %}
+    <span class="reserve-button__deposit-info">
+      {{ block.settings.deposit_info_text }}
+    </span>
+  {% endif %}
+</div>
+
+<script>
+  (function() {
+    const wrapper = document.querySelector('[data-reserve-button]');
+    if (!wrapper) return;
+
+    const button = wrapper.querySelector('.reserve-button');
+
+    button.addEventListener('click', function() {
+      if (this.disabled) return;
+
+      const variantId = this.getAttribute('data-variant-id');
+      if (!variantId) return;
+
+      this.disabled = true;
+      this.querySelector('.reserve-button__label').textContent = '{{ block.settings.loading_text }}';
+
+      const formData = {
+        items: [{
+          id: parseInt(variantId, 10),
+          quantity: 1,
+          properties: {
+            '_reservation': 'true'
+          }
+        }]
+      };
+
+      fetch('/cart/add.js', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+      .then(function(response) {
+        if (!response.ok) throw new Error('Failed to add to cart');
+        return response.json();
+      })
+      .then(function() {
+        window.location.href = '/checkout';
+      })
+      .catch(function() {
+        button.disabled = false;
+        button.querySelector('.reserve-button__label').textContent = '{{ block.settings.button_text }}';
+      });
+    });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Reserve Button",
+  "target": "section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button text",
+      "default": "Reserve Now"
+    },
+    {
+      "type": "text",
+      "id": "loading_text",
+      "label": "Loading text",
+      "default": "Reserving..."
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Button color",
+      "default": "#1A1A1A"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "Border radius",
+      "min": 0,
+      "max": 24,
+      "step": 2,
+      "default": 8,
+      "unit": "px"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_deposit_info",
+      "label": "Show deposit info",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "deposit_info_text",
+      "label": "Deposit info text",
+      "default": "Pay a small deposit to reserve this item"
+    }
+  ]
+}
+{% endschema %}
