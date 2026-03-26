@@ -1,0 +1,28 @@
+name: Process Expired Reservations
+
+on:
+  schedule:
+    # Run every hour
+    - cron: "0 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  process-expired:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci
+
+      - run: npx prisma generate
+
+      - name: Process expired reservations
+        run: npx tsx jobs/process-expired-reservations.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

@@ -47,3 +47,24 @@ model Reservation {
   @@index([shop])
   @@index([shop, productId])
 }
+
+model DepositOrder {
+  id              String   @id @default(uuid())
+  shop            String
+  orderId         String
+  orderName       String?
+  productId       String
+  variantId       String
+  customerEmail   String?
+  depositAmount   Float
+  fullPrice       Float
+  expiresAt       DateTime
+  status          String   @default("active") // "active", "completed", "expired"
+  restockedAt     DateTime?
+  reminderSentAt  DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([shop])
+  @@index([status, expiresAt])
+}
