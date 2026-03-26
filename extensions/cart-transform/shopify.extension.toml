@@ -9,7 +9,7 @@ type = "function"
   command = ""
   path = "src/run.ts"
 
-  [extensions.targeting]
+  [[extensions.targeting]]
     target = "purchase.cart-transform.run"
     input_query = "src/run.graphql"
 
