@@ -1,6 +1,6 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "df7e68259cbf29848ec76a1bf153d748"
+client_id = "62439501cdf38ffbb892980c63df997f"
 name = "Hold & Pay: Easy Reservations"
 application_url = "https://hold-and-pay-dotgreen-8cca3ad5.koyeb.app"
 embedded = true
