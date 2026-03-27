@@ -44,6 +44,14 @@ async function syncMetafield(admin: any, shop: string) {
     depositAmount: r.depositAmount,
   }));
 
+  // Get the current app installation ID (avoids needing numeric shop ID)
+  const appResponse = await admin.graphql(
+    `#graphql
+    query { currentAppInstallation { id } }`,
+  );
+  const appData = await appResponse.json();
+  const ownerId = appData.data.currentAppInstallation.id;
+
   await admin.graphql(
     `#graphql
     mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
@@ -60,7 +68,7 @@ async function syncMetafield(admin: any, shop: string) {
             key: "config",
             type: "json",
             value: JSON.stringify(config),
-            ownerId: `gid://shopify/Shop/${shop}`,
+            ownerId,
           },
         ],
       },
