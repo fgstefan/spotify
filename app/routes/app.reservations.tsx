@@ -33,7 +33,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return json({ reservations, shop: session.shop });
 };
 
-async function syncMetafield(admin: any, shop: string) {
+async function syncCartTransform(admin: any, shop: string) {
   const reservations = await prisma.reservation.findMany({
     where: { shop },
   });
@@ -44,36 +44,95 @@ async function syncMetafield(admin: any, shop: string) {
     depositAmount: r.depositAmount,
   }));
 
-  // Get the current app installation ID (avoids needing numeric shop ID)
-  const appResponse = await admin.graphql(
-    `#graphql
-    query { currentAppInstallation { id } }`,
-  );
-  const appData = await appResponse.json();
-  const ownerId = appData.data.currentAppInstallation.id;
+  const configValue = JSON.stringify(config);
 
-  await admin.graphql(
+  // Check if a cart transform already exists
+  const existingResponse = await admin.graphql(
     `#graphql
-    mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
-      metafieldsSet(metafields: $metafields) {
-        metafields { key }
-        userErrors { field message }
+    query {
+      cartTransforms(first: 10) {
+        nodes {
+          id
+          functionId
+        }
       }
     }`,
-    {
-      variables: {
-        metafields: [
-          {
-            namespace: "reserve-deposit",
-            key: "config",
-            type: "json",
-            value: JSON.stringify(config),
-            ownerId,
-          },
-        ],
-      },
-    },
   );
+  const existingData = await existingResponse.json();
+  const existing = existingData.data?.cartTransforms?.nodes?.[0];
+
+  if (existing) {
+    // Update existing cart transform with new metafield
+    await admin.graphql(
+      `#graphql
+      mutation CartTransformUpdate($id: ID!, $metafields: [MetafieldInput!]) {
+        cartTransformUpdate(id: $id, metafields: $metafields) {
+          cartTransform { id }
+          userErrors { field message }
+        }
+      }`,
+      {
+        variables: {
+          id: existing.id,
+          metafields: [
+            {
+              namespace: "reserve-deposit",
+              key: "config",
+              type: "json",
+              value: configValue,
+            },
+          ],
+        },
+      },
+    );
+  } else {
+    // Find the function ID for our cart transform
+    const functionsResponse = await admin.graphql(
+      `#graphql
+      query {
+        shopifyFunctions(first: 25) {
+          nodes {
+            id
+            title
+            apiType
+          }
+        }
+      }`,
+    );
+    const functionsData = await functionsResponse.json();
+    const cartTransformFn = functionsData.data?.shopifyFunctions?.nodes?.find(
+      (fn: any) => fn.apiType === "cart_transform",
+    );
+
+    if (!cartTransformFn) {
+      console.error("Cart transform function not found");
+      return;
+    }
+
+    // Create new cart transform
+    await admin.graphql(
+      `#graphql
+      mutation CartTransformCreate($functionId: String!, $metafields: [MetafieldInput!]) {
+        cartTransformCreate(functionId: $functionId, metafields: $metafields) {
+          cartTransform { id }
+          userErrors { field message }
+        }
+      }`,
+      {
+        variables: {
+          functionId: cartTransformFn.id,
+          metafields: [
+            {
+              namespace: "reserve-deposit",
+              key: "config",
+              type: "json",
+              value: configValue,
+            },
+          ],
+        },
+      },
+    );
+  }
 }
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -99,14 +158,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       },
     });
 
-    await syncMetafield(admin, session.shop);
+    await syncCartTransform(admin, session.shop);
     return json({ success: true });
   }
 
   if (intent === "delete") {
     const id = formData.get("id") as string;
     await prisma.reservation.delete({ where: { id } });
-    await syncMetafield(admin, session.shop);
+    await syncCartTransform(admin, session.shop);
     return json({ success: true });
   }
 
