@@ -2,7 +2,7 @@
 
 client_id = "df7e68259cbf29848ec76a1bf153d748"
 name = "Hold & Pay: Easy Reservations"
-application_url = "https://shopify.dev/apps/default-app-home"
+application_url = "https://hold-and-pay-dotgreen-8cca3ad5.koyeb.app"
 embedded = true
 distribution = "public"
 
@@ -42,4 +42,4 @@ api_version = "2026-04"
 scopes = "write_products,read_orders,write_orders,write_inventory,read_inventory,read_customers"
 
 [auth]
-redirect_urls = [ "https://shopify.dev/apps/default-app-home/api/auth" ]
+redirect_urls = [ "https://hold-and-pay-dotgreen-8cca3ad5.koyeb.app/auth/callback" ]

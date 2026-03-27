@@ -3,11 +3,13 @@ api_version = "2025-01"
 [[extensions]]
 name = "Reserve Deposit Cart Transform"
 handle = "reserve-deposit-cart-transform"
+uid = "1240a866-f206-cafe-1d84-3298923cbcc5eab76115"
 type = "function"
 
   [extensions.build]
-  command = ""
-  path = "src/run.ts"
+  command = "npm exec -- shopify app function build"
+  path = "dist/function.wasm"
+  watch = ["src/**/*.js"]
 
   [[extensions.targeting]]
     target = "purchase.cart-transform.run"

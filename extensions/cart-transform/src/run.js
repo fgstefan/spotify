@@ -1,41 +1,44 @@
-import type { RunInput, FunctionRunResult, CartOperation } from "../generated/api";
+// @ts-check
 
-interface ReservationConfig {
-  productId: string;
-  depositType: "fixed" | "percentage";
-  depositAmount: number;
-}
+/**
+ * @typedef {import("../generated/api").RunInput} RunInput
+ * @typedef {import("../generated/api").FunctionRunResult} FunctionRunResult
+ */
 
-export function run(input: RunInput): FunctionRunResult {
-  const operations: CartOperation[] = [];
+/**
+ * @param {RunInput} input
+ * @returns {FunctionRunResult}
+ */
+export function run(input) {
+  const operations = [];
 
   const metafieldValue = input.cartTransform?.metafield?.value;
   if (!metafieldValue) {
     return { operations: [] };
   }
 
-  let reservations: ReservationConfig[];
+  let reservations;
   try {
     reservations = JSON.parse(metafieldValue);
   } catch {
     return { operations: [] };
   }
 
-  const reservationMap = new Map<string, ReservationConfig>();
+  const reservationMap = new Map();
   for (const r of reservations) {
     reservationMap.set(r.productId, r);
   }
 
   for (const line of input.cart.lines) {
     const merchandise = line.merchandise;
-    if (!("product" in merchandise)) continue;
+    if (merchandise.__typename !== "ProductVariant") continue;
 
     const productId = merchandise.product.id;
     const reservation = reservationMap.get(productId);
     if (!reservation) continue;
 
     const originalPrice = parseFloat(line.cost.amountPerQuantity.amount);
-    let depositPrice: number;
+    let depositPrice;
 
     if (reservation.depositType === "fixed") {
       depositPrice = Math.min(reservation.depositAmount, originalPrice);
@@ -53,7 +56,7 @@ export function run(input: RunInput): FunctionRunResult {
             },
           },
         },
-        title: `Reservation deposit`,
+        title: "Reservation deposit",
       },
     });
   }

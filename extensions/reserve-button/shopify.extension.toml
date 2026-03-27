@@ -3,4 +3,5 @@ api_version = "2025-01"
 [[extensions]]
 name = "Reserve Button"
 handle = "reserve-button"
+uid = "a28566bc-eb55-38d0-ce54-168b72083d176cf5ee95"
 type = "theme"
