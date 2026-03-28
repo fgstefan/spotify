@@ -158,14 +158,22 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       },
     });
 
-    await syncCartTransform(admin, session.shop);
+    try {
+      await syncCartTransform(admin, session.shop);
+    } catch (e) {
+      console.error("syncCartTransform error:", e);
+    }
     return json({ success: true });
   }
 
   if (intent === "delete") {
     const id = formData.get("id") as string;
     await prisma.reservation.delete({ where: { id } });
-    await syncCartTransform(admin, session.shop);
+    try {
+      await syncCartTransform(admin, session.shop);
+    } catch (e) {
+      console.error("syncCartTransform error:", e);
+    }
     return json({ success: true });
   }
 
