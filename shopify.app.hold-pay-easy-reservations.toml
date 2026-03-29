@@ -20,7 +20,7 @@ api_version = "2026-04"
   uri = "/webhooks/app/scopes_update"
 
 [access_scopes]
-scopes = "write_products,read_orders,write_orders,write_inventory,read_inventory"
+scopes = "write_products,read_orders,write_orders,write_inventory,read_inventory,read_cart_transforms,write_cart_transforms"
 
 [auth]
 redirect_urls = [ "https://hold-and-pay-dotgreen-8cca3ad5.koyeb.app/auth/callback" ]
